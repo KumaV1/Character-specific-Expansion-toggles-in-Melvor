@@ -104,6 +104,6 @@
   "include": [
     "src/**/*",
     "node_modules/melvor-types",
-    "_cmimDefinitions/**/*"
+    "_definitions/**/*"
   ]
 }

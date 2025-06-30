@@ -1,5 +1,5 @@
 {
-  "namespace": "skillingLimitedCombat",
-  "icon": "assets/skillingLimitedCombat/Logo.png",
+  "namespace": "characterSpecificExpansionToggles",
+  "icon": "assets/Logo.png",
   "setup": "setup.mjs"
 }
