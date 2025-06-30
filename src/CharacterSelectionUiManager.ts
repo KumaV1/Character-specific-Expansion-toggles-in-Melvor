@@ -1,4 +1,6 @@
 import { Constants } from "./Constants";
+import { SaveSlotConfigurationManager } from "./SaveSlotConfigurationManager";
+import { ExpansionToggleState } from "./models/ExpansionToggleState"
 
 /**
  * Manages UI changes to character selection menu
@@ -9,44 +11,6 @@ export class CharacterSelectionUiManager {
      * @param ctx
      */
     public static patch(ctx: Modding.ModContext): void {
-        /**
-         * Patch connected callback, to ensure additional elements are created on time (sa you can't patch the constructor)
-         */
-        //ctx.patch(SaveSlotDisplayElement, 'connectedCallback').after(function (returnValue: void) {
-        //    console.log('SaveSlotDisplayElement.connectedCallback called');
-        //    if (!this.expansionTogglesDivider && !this.expansionTogglesButton) {
-        //        console.log('SaveSlotDisplayElement.connectedCallback running logic');
-        //        // Divider
-        //        let divider: HTMLDivElement = createElement('div', {
-        //            classList: ['dropdown-divider'],
-        //            attributes: [['role', 'separator']]
-        //        });
-        //
-        //        // Button
-        //        const icon: HTMLElement = createElement('i', {
-        //            classList: ['fa', 'fa-cog', 'mr-1']
-        //        });
-        //        const text: HTMLElement = createElement('span', {
-        //            text: getLangString(`${Constants.MOD_NAMESPACE}_EXPANSION_TOGGLES_OPEN_BUTTON`)
-        //            //attributes: [['lang-string', `${Constants.MOD_NAMESPACE}_EXPANSION_TOGGLES_OPEN_BUTTON`]]                    
-        //        });
-        //        let button: HTMLAnchorElement = createElement('a', {
-        //            classList: ['dropdown-item', 'pointer-enabled']
-        //        });
-        //        button.appendChild(icon);
-        //        button.appendChild(text);
-        //
-        //        // Set properties to elements
-        //        this.expansionTogglesDivider = divider;
-        //        this.expansionTogglesButton = button;
-        //
-        //        // Add elements to UI
-        //        this.deleteSettingsDivider.insertAdjacentElement('beforebegin', this.expansionTogglesDivider);
-        //        this.deleteSettingsDivider.insertAdjacentElement('beforebegin', this.expansionTogglesButton);
-        //        console.log('SaveSlotDisplayElement.connectedCallback finish logic');
-        //    }
-        //});
-
         /**
          * Patch set slot, so the function is set with the proper id as parameter
          */
@@ -61,6 +25,11 @@ export class CharacterSelectionUiManager {
                 this.expansionTogglesButton.onclick = () => CharacterSelectionUiManager.openExpansionToggles(slotID);
             }
         });
+
+        /**
+         * While "showCloudSettings", "showLocalSettings" and "showEmptySaveSettings" do exist, 
+         * it's probably fine to just show the button in all cases?
+         */
     }
 
     /**
@@ -78,9 +47,8 @@ export class CharacterSelectionUiManager {
         const icon: HTMLElement = createElement('i', {
             classList: ['fa', 'fa-sliders-h', 'mr-1']
         });
-        const text: HTMLElement = createElement('span', {
-            text: getLangString(`${Constants.MOD_NAMESPACE}_EXPANSION_TOGGLES_OPEN_BUTTON`)
-            //attributes: [['lang-string', `${Constants.MOD_NAMESPACE}_EXPANSION_TOGGLES_OPEN_BUTTON`]]                    
+        const text: HTMLSpanElement = createElement('span', {
+            text: getLangString(`${Constants.MOD_NAMESPACE}_EXPANSION_TOGGLES_OPEN_BUTTON`)                  
         });
         let button: HTMLAnchorElement = createElement('a', {
             classList: ['dropdown-item', 'pointer-enabled']
@@ -103,5 +71,13 @@ export class CharacterSelectionUiManager {
      */
     private static openExpansionToggles(slotId: number) {
         console.log('openExpansionToggles called, with slot id ' + slotId);
+        SaveSlotConfigurationManager.updateConfiguration(slotId, {
+            toth: slotId < 3
+                ? ExpansionToggleState.RequiredOn
+                : slotId < 6
+                    ? ExpansionToggleState.RequiredOff
+                    : ExpansionToggleState.NoPreference
+        });
+        SaveSlotConfigurationManager.updateAccountStorage();
     }
 }
