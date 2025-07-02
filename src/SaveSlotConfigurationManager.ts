@@ -49,6 +49,15 @@ export class SaveSlotConfigurationManager {
     }
 
     /**
+     * Try get configuration for save slot
+     * @param slotId
+     * @returns
+     */
+    public static getConfiguration(slotId: number): SaveSlotExpansionConfiguration | undefined {
+        return SaveSlotConfigurationManager._currentConfigurations.get(slotId);
+    }
+
+    /**
      * Updates the corresponding config entry. This does NOT save said info to storage, though
      * @param slotId
      * @param config
