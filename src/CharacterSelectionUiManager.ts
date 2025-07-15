@@ -4,6 +4,7 @@ import { CloudManagerExpansionIdentifier } from "./models/CloudManagerExpansionI
 import { ExpansionToggleState } from "./models/ExpansionToggleState"
 import { SaveSlotExpansionCheckResult } from "./models/SaveSlotExpansionCheckResult";
 import { SaveSlotExpansionCheckResults } from "./models/SaveSlotExpansionCheckResults";
+import { SaveSlotExpansionToggleStates } from "./models/SaveSlotExpansionToggleStates";
 import { computeExpansionValidityForSave, setExpansionToggle } from "./utils";
 
 /**
@@ -23,13 +24,10 @@ export class CharacterSelectionUiManager {
      * @param ctx
      */
     private static patchElements(ctx: Modding.ModContext) {
-        console.log('CharacterSelectionUiManager.patchElements called');
-
         /**
          * Patch set slot, so the function is set with the proper id as parameter
          */
         ctx.patch(SaveSlotDisplayElement, 'setSlotID').after(function (returnValue: void, slotID: number) {
-            console.log('SaveSlotDisplayElement.setSlotID entered');
             // Check whether custom elements have yet to be added
             if (!this.expansionTogglesDivider && !this.expansionTogglesButton) {
                 CharacterSelectionUiManager.AddDividerAndButton(this);
@@ -46,14 +44,11 @@ export class CharacterSelectionUiManager {
          * it's probably fine to just show the button in all cases? (NEVERMIND TIS COMMENT, SEE COMMENT BLOCK ON LINE 52 ONWARDS)
          */
         ctx.patch(SaveSlotDisplayElement, 'setCloudSave').after(function (returnValue: void, slotID: number, cloudInfo: SaveGameHeader, localInfo?: SaveGameHeader): void {
-            console.log('SaveSlotDisplayElement.setCloudSave entered');
             if (this.forceLoadOption.onclick !== null) {
                 const originalOnClick = this.forceLoadOption.onclick;
                 this.forceLoadOption.onclick = null;
 
                 this.forceLoadOption.onclick = (e) => {
-                    console.log('modified this.selectCharacterButton.onclick called');
-
                     const checkResults = computeExpansionValidityForSave(slotID, true);
 
                     if (CharacterSelectionUiManager.checkResultsAreInvalid(checkResults)) {
@@ -70,14 +65,11 @@ export class CharacterSelectionUiManager {
          * it's probably fine to just show the button in all cases? (NEVERMIND TIS COMMENT, SEE COMMENT BLOCK ON LINE 52 ONWARDS)
          */
         ctx.patch(SaveSlotDisplayElement, 'setLocalSave').after(function (returnValue: void, slotID: number, cloudInfo: SaveGameHeader, localInfo?: SaveGameHeader): void {
-            console.log('SaveSlotDisplayElement.setLocalSave entered');
             if (this.forceLoadOption.onclick !== null) {
                 const originalOnClick = this.forceLoadOption.onclick;
                 this.forceLoadOption.onclick = null;
 
                 this.forceLoadOption.onclick = (e) => {
-                    console.log('modified this.selectCharacterButton.onclick called');
-
                     const checkResults = computeExpansionValidityForSave(slotID, false);
 
                     if (CharacterSelectionUiManager.checkResultsAreInvalid(checkResults)) {
@@ -90,14 +82,11 @@ export class CharacterSelectionUiManager {
         });
 
         ctx.patch(CharacterDisplayElement, 'setCharacter').after(function (returnValue: void, slotID: number, headerInfo: SaveGameHeader, isCloud: boolean, disableCallbacks?: boolean): void {
-            console.log('CharacterDisplayElement.setCharacter entered');
             if (this.selectCharacterButton.onclick !== null) {
                 const originalOnClick = this.selectCharacterButton.onclick;
                 this.selectCharacterButton.onclick = null;
             
                 this.selectCharacterButton.onclick = (e) => {
-                    console.log('modified this.selectCharacterButton.onclick called');
-
                     const checkResults = computeExpansionValidityForSave(slotID, isCloud);
             
                     if (CharacterSelectionUiManager.checkResultsAreInvalid(checkResults)) {
@@ -149,14 +138,38 @@ export class CharacterSelectionUiManager {
      */
     private static openExpansionToggles(slotId: number) {
         console.log('openExpansionToggles called, with slot id ' + slotId);
-        SaveSlotConfigurationManager.updateConfiguration(slotId, {
-            toth: ExpansionToggleState.RequiredOn /*slotId < 3
-                ? ExpansionToggleState.RequiredOn
-                : slotId < 6
-                    ? ExpansionToggleState.RequiredOff
-                    : ExpansionToggleState.NoPreference*/
+        CharacterSelectionUiManager.fireConfigurationPrompt(slotId);
+    }
+
+    /**
+     * 
+     * @param saveSlotId
+     */
+    private static fireConfigurationPrompt(saveSlotId: number): void {
+        SwalLocale.fire({
+            title: getLangString(`${Constants.MOD_NAMESPACE}_EXPANSION_CONFIGURATION_MODAL_TITLE`),
+            icon: 'info',
+            html: CharacterSelectionUiManager.buildConfigurationPromptContent(saveSlotId),
+            showConfirmButton: true,
+            confirmButtonText: getLangString(`${Constants.MOD_NAMESPACE}_EXPANSION_CONFIGURATION_MODAL_CONFIRMATION_BUTTON`),
+            showDenyButton: true,
+            denyButtonText: getLangString(`${Constants.MOD_NAMESPACE}_EXPANSION_CONFIGURATION_MODAL_DENY_BUTTON`),
+            preConfirm: () => {
+                return {
+                    toth: (<HTMLInputElement>document.getElementById(Constants.CONFIGURATION_MODAL_TOTH_INPUT_ELEMENT_ID))?.value,
+                    aod: (<HTMLInputElement>document.getElementById(Constants.CONFIGURATION_MODAL_AOD_INPUT_ELEMENT_ID))?.value,
+                    ita: (<HTMLInputElement>document.getElementById(Constants.CONFIGURATION_MODAL_ITA_INPUT_ELEMENT_ID))?.value
+                };
+            }
+        }).then(async (result: { isConfirmed: boolean, value: Partial<SaveSlotExpansionToggleStates> }) => {
+            if (result.isConfirmed) {
+                SaveSlotConfigurationManager.updateConfiguration(saveSlotId, result.value);
+                console.log('New expansion configuration:');
+                console.log(result.value);
+                SaveSlotConfigurationManager.updateAccountStorage();
+                window.location.reload();
+            }
         });
-        SaveSlotConfigurationManager.updateAccountStorage();
     }
 
     /**
@@ -172,7 +185,7 @@ export class CharacterSelectionUiManager {
             confirmButtonText: getLangString(`${Constants.MOD_NAMESPACE}_EXPANSION_MISMATCH_MODAL_CONFIRMATION_BUTTON`),
             showDenyButton: true,
             denyButtonText: getLangString(`${Constants.MOD_NAMESPACE}_EXPANSION_MISMATCH_MODAL_DENY_BUTTON`),
-        }).then(async (result: { value: boolean }) => {
+        }).then(async (result: { value: any }) => {
             if (result.value) {
                 // DEV NOTE: "cloudManager.enabledExpansions" isn't accessible from outside. The only way to change the toggles seems to be with the "toggleExpansionLoading" method
                 // TODO: Change to loop...
@@ -246,6 +259,147 @@ export class CharacterSelectionUiManager {
         }
 
         return false;
+    }
+
+    private static buildConfigurationPromptContent(saveSlotId: number): string {
+        const config = SaveSlotConfigurationManager.getConfiguration(saveSlotId);
+        console.log(config);
+
+        // Most external wrapper
+        const wrapper = createElement('div', {
+            classList: ['overflow-hidden']
+        });
+
+        // Sub wrapper
+        const subWrapper = createElement('div', { // just following a similar format to the mod profile mis match, not sure if this actually serves a purpose
+            classList: ['overflow-hidden']
+        });
+        wrapper.appendChild(subWrapper);
+
+        // Toggles
+        // TODO: Improve code-reusage
+        if (cloudManager.hasTotHEntitlement) {
+            console.log(config?.toth);
+            const tothTextElement = createElement('span', {
+                classList: ['mr-2'],
+                text: 'Throne of the Herald'
+            });
+            const tothSelectElement = createElement('select', {
+                id: Constants.CONFIGURATION_MODAL_TOTH_INPUT_ELEMENT_ID
+            });
+
+            const optionElement1 = createElement('option');
+            optionElement1.value = ExpansionToggleState.RequiredOn;
+            optionElement1.text = getLangString(`${Constants.MOD_NAMESPACE}_EXPANSION_TOGGLE_STATE_requiredOn`);
+            if (config?.toth === ExpansionToggleState.RequiredOn) {
+                optionElement1.setAttribute('selected', 'selected'); // Set attribute, so that SweetAlert properly pre-selects a certain select option
+            }
+            tothSelectElement.add(optionElement1);
+
+            const optionElement2 = createElement('option');
+            optionElement2.value = ExpansionToggleState.RequiredOff;
+            optionElement2.text = getLangString(`${Constants.MOD_NAMESPACE}_EXPANSION_TOGGLE_STATE_requiredOff`);
+            if (config?.toth === ExpansionToggleState.RequiredOff) {
+                optionElement2.setAttribute('selected', 'selected');
+            }
+            tothSelectElement.add(optionElement2);
+
+            const optionElement3 = createElement('option');
+            optionElement3.value = ExpansionToggleState.NoPreference; // TODO: Maybe make this the first option, instead of the last (due to this basically being the default logic-wise)
+            optionElement3.text = getLangString(`${Constants.MOD_NAMESPACE}_EXPANSION_TOGGLE_STATE_noPreference`);
+            if (config?.toth === ExpansionToggleState.NoPreference) {
+                optionElement3.setAttribute('selected', 'selected');
+            }
+            tothSelectElement.add(optionElement3);
+
+            subWrapper.appendChild(tothTextElement);
+            subWrapper.appendChild(tothSelectElement);
+        }
+        if (cloudManager.hasAoDEntitlement) {
+            const aodTextElement = createElement('span', {
+                classList: ['mr-2'],
+                text: 'Atlas of Discovery'
+            });
+            const aodSelectElement = createElement('select', {
+                id: Constants.CONFIGURATION_MODAL_AOD_INPUT_ELEMENT_ID
+            });
+
+            const optionElement1 = createElement('option');
+            optionElement1.value = ExpansionToggleState.RequiredOn;
+            optionElement1.text = getLangString(`${Constants.MOD_NAMESPACE}_EXPANSION_TOGGLE_STATE_requiredOn`);
+            if (config?.aod === ExpansionToggleState.RequiredOn) {
+                optionElement1.setAttribute('selected', 'selected');
+            }
+            aodSelectElement.add(optionElement1);
+
+            const optionElement2 = createElement('option');
+            optionElement2.value = ExpansionToggleState.RequiredOff;
+            optionElement2.text = getLangString(`${Constants.MOD_NAMESPACE}_EXPANSION_TOGGLE_STATE_requiredOff`);
+            if (config?.aod === ExpansionToggleState.RequiredOff) {
+                optionElement2.setAttribute('selected', 'selected');
+            }
+            aodSelectElement.add(optionElement2);
+
+            const optionElement3 = createElement('option');
+            optionElement3.value = ExpansionToggleState.NoPreference;
+            optionElement3.text = getLangString(`${Constants.MOD_NAMESPACE}_EXPANSION_TOGGLE_STATE_noPreference`);
+            if (config?.aod === ExpansionToggleState.NoPreference) {
+                optionElement3.setAttribute('selected', 'selected');
+            }
+            aodSelectElement.add(optionElement3);
+
+            if (cloudManager.hasTotHEntitlement) {
+                subWrapper.appendChild(createElement('br'));
+                subWrapper.appendChild(createElement('br'));
+            }
+            subWrapper.appendChild(aodTextElement);
+            subWrapper.appendChild(aodSelectElement);
+        }
+        if (cloudManager.hasItAEntitlement) {
+            const itaTextElement = createElement('span', {
+                classList: ['mr-2'],
+                text: 'Into the Abyss'
+            });
+            const itaSelectElement = createElement('select', {
+                id: Constants.CONFIGURATION_MODAL_ITA_INPUT_ELEMENT_ID
+            });
+
+            const optionElement1 = createElement('option');
+            optionElement1.value = ExpansionToggleState.RequiredOn;
+            optionElement1.text = getLangString(`${Constants.MOD_NAMESPACE}_EXPANSION_TOGGLE_STATE_requiredOn`);
+            if (config?.ita === ExpansionToggleState.RequiredOn) {
+                optionElement1.setAttribute('selected', 'selected');
+            }
+            itaSelectElement.add(optionElement1);
+
+            const optionElement2 = createElement('option');
+            optionElement2.value = ExpansionToggleState.RequiredOff;
+            optionElement2.text = getLangString(`${Constants.MOD_NAMESPACE}_EXPANSION_TOGGLE_STATE_requiredOff`);
+            if (config?.ita === ExpansionToggleState.RequiredOff) {
+                optionElement2.setAttribute('selected', 'selected');
+            }
+            itaSelectElement.add(optionElement2);
+
+            const optionElement3 = createElement('option');
+            optionElement3.value = ExpansionToggleState.NoPreference;
+            optionElement3.text = getLangString(`${Constants.MOD_NAMESPACE}_EXPANSION_TOGGLE_STATE_noPreference`);
+            if (config?.ita === ExpansionToggleState.NoPreference) {
+                optionElement3.setAttribute('selected', 'selected');
+            }
+            itaSelectElement.add(optionElement3);
+
+            if (cloudManager.hasTotHEntitlement || cloudManager.hasItAEntitlement) {
+                subWrapper.appendChild(createElement('br'));
+                subWrapper.appendChild(createElement('br'));
+            }
+            subWrapper.appendChild(itaTextElement);
+            subWrapper.appendChild(itaSelectElement);
+        }
+
+        // Return overall html
+        console.log(wrapper);
+        console.log(wrapper.innerHTML);
+        return wrapper.innerHTML;
     }
 
     /**

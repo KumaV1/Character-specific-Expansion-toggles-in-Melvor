@@ -78,7 +78,6 @@ function getDataLoadedExpansions(): { toth: boolean, aod: boolean, ita: boolean 
  * @param newState
  */
 function enforceExpansionToggle(expansion: CloudManagerExpansionIdentifier, oldState: boolean, newState: boolean): void {
-    console.log('enforceExpansionToggle called');
     console.log([expansion, oldState, newState]);
     if (oldState !== newState) {
         cloudManager.toggleExpansionLoading(expansion);
