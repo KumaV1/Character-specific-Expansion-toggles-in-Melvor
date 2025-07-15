@@ -15,17 +15,16 @@ export class SaveSlotConfigurationManager {
 
     /** Initialize on game start */
     public static initialize(ctx: Modding.ModContext) {
-        console.log('SaveSlotConfigurationManager.initialize called');
         SaveSlotConfigurationManager._ctx = ctx;
 
         // Get configs in storage
-        const configsInStorage: Map<number, SaveSlotExpansionConfiguration> = ctx.accountStorage.getItem(Constants.STORAGE_KEY_SAVE_SLOT_EXPANSION_CONFIGS) ?? new Map();
+        const configsInStorage: { [key: number]: SaveSlotExpansionConfiguration } = ctx.accountStorage.getItem(Constants.STORAGE_KEY_SAVE_SLOT_EXPANSION_CONFIGS) ?? new Map();
         console.log(configsInStorage);
 
         // Set up config collection used while the game is running
         SaveSlotConfigurationManager._currentConfigurations = new Map();
         for (let i = 0; i < maxSaveSlots; i++) {
-            const configInStorage: SaveSlotExpansionConfiguration | undefined = configsInStorage.get(i);
+            const configInStorage: SaveSlotExpansionConfiguration | undefined = configsInStorage[i];
             if (configInStorage !== undefined) {
                 SaveSlotConfigurationManager._currentConfigurations.set(i, configInStorage);
             }
@@ -38,12 +37,12 @@ export class SaveSlotConfigurationManager {
      * Writes the current state of @see {@link _currentConfigurations} into account storage
      */
     public static updateAccountStorage() {
-        console.log('SaveSlotConfigurationManager.updateAccountStorage called');
-        let newConfigs = new Map <number, SaveSlotExpansionConfiguration>();
+        let newConfigs = {} as { [key: number]: SaveSlotExpansionConfiguration };
         SaveSlotConfigurationManager._currentConfigurations.forEach((value: SaveSlotExpansionConfiguration, key: number) => {
-            newConfigs.set(key, value);
+            newConfigs[key] = value;
         });
 
+        console.log(newConfigs);
         this._ctx.accountStorage.setItem(Constants.STORAGE_KEY_SAVE_SLOT_EXPANSION_CONFIGS, newConfigs);
         console.log(this._ctx.accountStorage.getItem(Constants.STORAGE_KEY_SAVE_SLOT_EXPANSION_CONFIGS));
     }
@@ -64,7 +63,14 @@ export class SaveSlotConfigurationManager {
      */
     public static updateConfiguration(slotId: number, config: SaveSlotExpansionConfiguration) {
         SaveSlotConfigurationManager._currentConfigurations.set(slotId, config);
-        console.log('SaveSlotConfigurationManager.updateConfiguration called');
         console.log(SaveSlotConfigurationManager._currentConfigurations);
+    }
+
+    public static getAllCurrentConfigurations(): Map<number, SaveSlotExpansionConfiguration> {
+        return SaveSlotConfigurationManager._currentConfigurations;
+    }
+
+    public static getAccountStorage(): Map<number, SaveSlotExpansionConfiguration> {
+        return this._ctx.accountStorage.getItem(Constants.STORAGE_KEY_SAVE_SLOT_EXPANSION_CONFIGS);
     }
 }

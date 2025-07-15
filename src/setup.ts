@@ -7,4 +7,9 @@ export async function setup(ctx: Modding.ModContext) {
     TranslationManager.register();
     SaveSlotConfigurationManager.initialize(ctx);
     CharacterSelectionUiManager.patch(ctx);
+
+    ctx.api({
+        getAllCurrentConfigurations: () => SaveSlotConfigurationManager.getAllCurrentConfigurations(),
+        getAccountStorage: () => SaveSlotConfigurationManager.getAccountStorage()
+    });
 }
