@@ -9,10 +9,10 @@ declare global {
 
         /**
          * Toggles the given expansion
+         * DEV NOTE: Type definition combines pre and post offline client!
          * @param expansion
          */
-        toggleExpansionLoading(expansion: 0 | 1 | 2): void
-        //toggleExpansionLoading(expansion: 'TotH' | 'AoD' | 'ItA'): void
+        toggleExpansionLoading(expansion: 0 | 1 | 2 | 'TotH' | 'AoD' | 'ItA'): void
     }
 
     const cloudManager: CloudManager;
