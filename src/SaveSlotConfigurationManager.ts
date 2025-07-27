@@ -19,6 +19,7 @@ export class SaveSlotConfigurationManager {
 
         // Get configs in storage
         const configsInStorage: { [key: number]: SaveSlotExpansionConfiguration } = ctx.accountStorage.getItem(Constants.STORAGE_KEY_SAVE_SLOT_EXPANSION_CONFIGS) ?? new Map();
+        console.log('Config extraced from account storage while loading:');
         console.log(configsInStorage);
 
         // Set up config collection used while the game is running
@@ -30,6 +31,7 @@ export class SaveSlotConfigurationManager {
             }
         }
 
+        console.log('Current configuration set up from storage data:');
         console.log(SaveSlotConfigurationManager._currentConfigurations);
     }
 

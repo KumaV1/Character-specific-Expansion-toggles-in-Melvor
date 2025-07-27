@@ -7,7 +7,7 @@ import { SaveSlotExpansionCheckResults } from "./models/SaveSlotExpansionCheckRe
  * Set the account wide enablement toggle for an expansion
  * @param newState
  */
-export function setExpansionToggle(expansion: CloudManagerExpansionIdentifier, newState: boolean): void {
+export async function setExpansionToggle(expansion: CloudManagerExpansionIdentifier, newState: boolean): Promise<void> {
     let currentState: boolean | undefined = undefined;
     switch (expansion) {
         case CloudManagerExpansionIdentifier.ThroneOfTheHerald:
@@ -26,7 +26,7 @@ export function setExpansionToggle(expansion: CloudManagerExpansionIdentifier, n
     if (currentState === undefined) {
         console.warn(`Failed to determine current toggle state for expansion ${expansion}. No change of toggles will take place`);
     } else {
-        enforceExpansionToggle(expansion, currentState, newState);
+        await enforceExpansionToggle(expansion, currentState, newState);
     }
 
 }
@@ -77,9 +77,11 @@ function getDataLoadedExpansions(): { toth: boolean, aod: boolean, ita: boolean 
  * @param expansion
  * @param newState
  */
-function enforceExpansionToggle(expansion: CloudManagerExpansionIdentifier, oldState: boolean, newState: boolean): void {
-    console.log([expansion, oldState, newState]);
+async function enforceExpansionToggle(expansion: CloudManagerExpansionIdentifier, oldState: boolean, newState: boolean): Promise<void> {
+    //console.log([expansion, oldState, newState]);
     if (oldState !== newState) {
-        cloudManager.toggleExpansionLoading(expansion);
+        await cloudManager.toggleExpansionLoading(expansion);
+        console.log('State after "await cloudManager.toggleExpansionLoading(expansion)"');
+        console.log([expansion, oldState, newState]);
     }
 }
