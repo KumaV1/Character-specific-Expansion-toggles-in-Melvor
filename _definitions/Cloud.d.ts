@@ -11,7 +11,8 @@ declare global {
          * Toggles the given expansion
          * @param expansion
          */
-        toggleExpansionLoading(expansion: 'TotH' | 'AoD' | 'ItA'): void
+        toggleExpansionLoading(expansion: 0 | 1 | 2): void
+        //toggleExpansionLoading(expansion: 'TotH' | 'AoD' | 'ItA'): void
     }
 
     const cloudManager: CloudManager;

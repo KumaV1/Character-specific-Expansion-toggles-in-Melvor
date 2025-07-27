@@ -48,11 +48,11 @@ export class CharacterSelectionUiManager {
                 const originalOnClick = this.forceLoadOption.onclick;
                 this.forceLoadOption.onclick = null;
 
-                this.forceLoadOption.onclick = (e) => {
+                this.forceLoadOption.onclick = async (e) => {
                     const checkResults = computeExpansionValidityForSave(slotID, true);
 
                     if (CharacterSelectionUiManager.checkResultsAreInvalid(checkResults)) {
-                        CharacterSelectionUiManager.fireExpansionMismatchPrompt(checkResults);
+                        await CharacterSelectionUiManager.fireExpansionMismatchPrompt(checkResults);
                     } else {
                         originalOnClick.call(this.forceLoadOption, e);
                     }
@@ -69,11 +69,11 @@ export class CharacterSelectionUiManager {
                 const originalOnClick = this.forceLoadOption.onclick;
                 this.forceLoadOption.onclick = null;
 
-                this.forceLoadOption.onclick = (e) => {
+                this.forceLoadOption.onclick = async (e) => {
                     const checkResults = computeExpansionValidityForSave(slotID, false);
 
                     if (CharacterSelectionUiManager.checkResultsAreInvalid(checkResults)) {
-                        CharacterSelectionUiManager.fireExpansionMismatchPrompt(checkResults);
+                        await CharacterSelectionUiManager.fireExpansionMismatchPrompt(checkResults);
                     } else {
                         originalOnClick.call(this.forceLoadOption, e);
                     }
@@ -85,12 +85,12 @@ export class CharacterSelectionUiManager {
             if (this.selectCharacterButton.onclick !== null) {
                 const originalOnClick = this.selectCharacterButton.onclick;
                 this.selectCharacterButton.onclick = null;
-            
-                this.selectCharacterButton.onclick = (e) => {
+
+                this.selectCharacterButton.onclick = async (e) => {
                     const checkResults = computeExpansionValidityForSave(slotID, isCloud);
-            
+
                     if (CharacterSelectionUiManager.checkResultsAreInvalid(checkResults)) {
-                        CharacterSelectionUiManager.fireExpansionMismatchPrompt(checkResults);
+                        await CharacterSelectionUiManager.fireExpansionMismatchPrompt(checkResults);
                     } else {
                         originalOnClick.call(this.selectCharacterButton, e);
                     }
@@ -115,7 +115,7 @@ export class CharacterSelectionUiManager {
             classList: ['fa', 'fa-sliders-h', 'mr-1']
         });
         const text: HTMLSpanElement = createElement('span', {
-            text: getLangString(`${Constants.MOD_NAMESPACE}_EXPANSION_TOGGLES_OPEN_BUTTON`)                  
+            text: getLangString(`${Constants.MOD_NAMESPACE}_EXPANSION_TOGGLES_OPEN_BUTTON`)
         });
         let button: HTMLAnchorElement = createElement('a', {
             classList: ['dropdown-item', 'pointer-enabled']
@@ -136,16 +136,16 @@ export class CharacterSelectionUiManager {
      * Open expansion toggle modal for given save slot
      * @param slotId
      */
-    private static openExpansionToggles(slotId: number) {
+    private static async openExpansionToggles(slotId: number): Promise<void> {
         console.log('openExpansionToggles called, with slot id ' + slotId);
-        CharacterSelectionUiManager.fireConfigurationPrompt(slotId);
+        await CharacterSelectionUiManager.fireConfigurationPrompt(slotId);
     }
 
     /**
      * 
      * @param saveSlotId
      */
-    private static fireConfigurationPrompt(saveSlotId: number): void {
+    private static async fireConfigurationPrompt(saveSlotId: number): Promise<void> {
         SwalLocale.fire({
             title: getLangString(`${Constants.MOD_NAMESPACE}_EXPANSION_CONFIGURATION_MODAL_TITLE`),
             icon: 'info',
@@ -164,10 +164,18 @@ export class CharacterSelectionUiManager {
         }).then(async (result: { isConfirmed: boolean, value: Partial<SaveSlotExpansionToggleStates> }) => {
             if (result.isConfirmed) {
                 SaveSlotConfigurationManager.updateConfiguration(saveSlotId, result.value);
+                SaveSlotConfigurationManager.updateAccountStorage();
                 console.log('New expansion configuration:');
                 console.log(result.value);
-                SaveSlotConfigurationManager.updateAccountStorage();
-                window.location.reload();
+                fireTopToast(`<div class="block block-rounded-double bg-dark p-2">
+                  <div class="media d-flex align-items-center push">
+                    <div class="media-body text-left">
+                      <div class="text-success">
+                        ${getLangString(`${Constants.MOD_NAMESPACE}_EXPANSION_CONFIGURATION_MODAL_CONFIRMATION`)}
+                      </div>
+                    </div>
+                  </div>
+                </div>`, 5000)
             }
         });
     }
@@ -176,7 +184,7 @@ export class CharacterSelectionUiManager {
      * 
      * @param checkResults
      */
-    private static fireExpansionMismatchPrompt(checkResults: SaveSlotExpansionCheckResults): void {
+    private static async fireExpansionMismatchPrompt(checkResults: SaveSlotExpansionCheckResults): Promise<void> {
         SwalLocale.fire({
             title: getLangString(`${Constants.MOD_NAMESPACE}_EXPANSION_MISMATCH_MODAL_TITLE`),
             icon: 'warning',
@@ -193,32 +201,32 @@ export class CharacterSelectionUiManager {
                 console.log([cloudManager.hasTotHEntitlementAndIsEnabled, cloudManager.hasAoDEntitlementAndIsEnabled, cloudManager.hasItAEntitlementAndIsEnabled]);
                 switch (checkResults.toth.saveSlotConfigToggleState) {
                     case ExpansionToggleState.RequiredOn:
-                        setExpansionToggle(CloudManagerExpansionIdentifier.ThroneOfTheHerald, true);
+                        await setExpansionToggle(CloudManagerExpansionIdentifier.ThroneOfTheHerald, true);
                         break;
                     case ExpansionToggleState.RequiredOff:
-                        setExpansionToggle(CloudManagerExpansionIdentifier.ThroneOfTheHerald, false);
+                        await setExpansionToggle(CloudManagerExpansionIdentifier.ThroneOfTheHerald, false);
                         break;
                     case ExpansionToggleState.NoPreference:
                     default: // TODO: Possibly throw exception, as presumably a bug of this mod, if reaching here?
                         break;
                 }
-                switch (checkResults.toth.saveSlotConfigToggleState) {
+                switch (checkResults.aod.saveSlotConfigToggleState) {
                     case ExpansionToggleState.RequiredOn:
-                        setExpansionToggle(CloudManagerExpansionIdentifier.AtlasOfDiscovery, true);
+                        await setExpansionToggle(CloudManagerExpansionIdentifier.AtlasOfDiscovery, true);
                         break;
                     case ExpansionToggleState.RequiredOff:
-                        setExpansionToggle(CloudManagerExpansionIdentifier.AtlasOfDiscovery, false);
+                        await setExpansionToggle(CloudManagerExpansionIdentifier.AtlasOfDiscovery, false);
                         break;
                     case ExpansionToggleState.NoPreference:
                     default: // TODO: Possibly throw exception, as presumably a bug of this mod, if reaching here?
                         break;
                 }
-                switch (checkResults.toth.saveSlotConfigToggleState) {
+                switch (checkResults.ita.saveSlotConfigToggleState) {
                     case ExpansionToggleState.RequiredOn:
-                        setExpansionToggle(CloudManagerExpansionIdentifier.IntoTheAbyss, true);
+                        await setExpansionToggle(CloudManagerExpansionIdentifier.IntoTheAbyss, true);
                         break;
                     case ExpansionToggleState.RequiredOff:
-                        setExpansionToggle(CloudManagerExpansionIdentifier.IntoTheAbyss, false);
+                        await setExpansionToggle(CloudManagerExpansionIdentifier.IntoTheAbyss, false);
                         break;
                     case ExpansionToggleState.NoPreference:
                     default: // TODO: Possibly throw exception, as presumably a bug of this mod, if reaching here?
@@ -226,7 +234,18 @@ export class CharacterSelectionUiManager {
                 }
                 console.log('After expansion toggles (only works on those also entitled)');
                 console.log([cloudManager.hasTotHEntitlementAndIsEnabled, cloudManager.hasAoDEntitlementAndIsEnabled, cloudManager.hasItAEntitlementAndIsEnabled]);
-                window.location.reload();
+
+                SwalLocale.fire({
+                    title: 'Adjustment confirmed',
+                    icon: 'success',
+                    html: 'Please wait 5 seconds, the game will soon reload to reflect the changes made',
+                    showConfirmButton: false,
+                    showDenyButton: false,
+                });
+
+                setTimeout(function () {
+                    window.location.reload();
+                }, 5000);
             }
         });
     }
@@ -255,7 +274,7 @@ export class CharacterSelectionUiManager {
                     default:
                         break; // TODO: Possibly throw exception, as presumably a bug of this mod, if reaching here?
                 }
-            }            
+            }
         }
 
         return false;
@@ -422,8 +441,9 @@ export class CharacterSelectionUiManager {
         // Description
         const descParagraph1 = getLangString(`${Constants.MOD_NAMESPACE}_EXPANSION_MISMATCH_MODAL_PARAGRAPH_1`);
         const descParagraph2 = getLangString(`${Constants.MOD_NAMESPACE}_EXPANSION_MISMATCH_MODAL_PARAGRAPH_2`);
+        const descParagraph3 = getLangString(`${Constants.MOD_NAMESPACE}_EXPANSION_MISMATCH_MODAL_PARAGRAPH_3`);
         const description = createElement('div', {
-            innerHTML: `<p>${descParagraph1}</p><p>${descParagraph2}</p>`
+            innerHTML: `<p>${descParagraph1}</p><p>${descParagraph2}</p><p class="font-size-sm text-warning"><i>${descParagraph3}</i></p>`
         });
         const summaryContainer = createElement('div', {
             classList: ['row']
@@ -518,15 +538,15 @@ export class CharacterSelectionUiManager {
             case ExpansionToggleState.RequiredOn:
                 explanationColor = checkResult.isEnabled && checkResult.dataLoaded
                     ? 'success'
-                    : 'danger';                
+                    : 'danger';
                 break;
             case ExpansionToggleState.RequiredOff:
                 explanationColor = !checkResult.isEnabled && !checkResult.dataLoaded
                     ? 'success'
-                    : 'danger';          
+                    : 'danger';
                 break;
             case ExpansionToggleState.NoPreference:
-                explanationColor = 'info';          
+                explanationColor = 'info';
                 break;
             default:
                 break; // throw exception, as likely mod bug, if reaches here?
