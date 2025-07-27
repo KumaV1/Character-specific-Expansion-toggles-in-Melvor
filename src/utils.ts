@@ -1,3 +1,4 @@
+import { GameVersionManager } from "./GameVersionManager";
 import { SaveSlotConfigurationManager } from "./SaveSlotConfigurationManager";
 import { CloudManagerExpansionIdentifier } from "./models/CloudManagerExpansionIdentifier";
 import { ExpansionToggleState } from "./models/ExpansionToggleState";
@@ -78,10 +79,35 @@ function getDataLoadedExpansions(): { toth: boolean, aod: boolean, ita: boolean 
  * @param newState
  */
 async function enforceExpansionToggle(expansion: CloudManagerExpansionIdentifier, oldState: boolean, newState: boolean): Promise<void> {
+    let expansionParsed = undefined as undefined | 0 | 1 | 2 | 'TotH' | 'AoD' | 'ItA';
+    switch (expansion) {
+        case CloudManagerExpansionIdentifier.ThroneOfTheHerald:
+            expansionParsed = GameVersionManager.isOfflineClientVersion
+                ? 'TotH'
+                : 0;
+            break;
+        case CloudManagerExpansionIdentifier.AtlasOfDiscovery:
+            expansionParsed = GameVersionManager.isOfflineClientVersion
+                ? 'AoD'
+                : 1;
+            break;
+        case CloudManagerExpansionIdentifier.IntoTheAbyss:
+            expansionParsed = GameVersionManager.isOfflineClientVersion
+                ? 'ItA'
+                : 2;
+            break;
+        default: // TODO: Possibly throw exception, as presumably a bug of this mod, if reaching here?
+            break;
+    }
+    if (expansionParsed === undefined) {
+        console.warn(`Failed to parse expansion ${expansion} to cloud manager identifier. No change of toggles will take place`);
+        return;
+    }
+
     //console.log([expansion, oldState, newState]);
     if (oldState !== newState) {
-        await cloudManager.toggleExpansionLoading(expansion);
+        await cloudManager.toggleExpansionLoading(expansionParsed);
         console.log('State after "await cloudManager.toggleExpansionLoading(expansion)"');
-        console.log([expansion, oldState, newState]);
+        console.log([expansionParsed, oldState, newState]);
     }
 }
