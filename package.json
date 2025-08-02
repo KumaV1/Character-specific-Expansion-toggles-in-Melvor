@@ -1,6 +1,6 @@
 {
   "name": "character-specific-expansion-toggles",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "MelvorIdle mod, allowing separate configuration of expansion toggles for each character slot",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
