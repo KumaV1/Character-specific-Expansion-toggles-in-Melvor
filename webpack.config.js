@@ -28,8 +28,8 @@ module.exports = {
     module: {
         generator: {
             'asset/resource': {
-                publicPath: 'assets/REPO_BOILERPLATE/',
-                outputPath: 'assets/REPO_BOILERPLATE/',
+                publicPath: 'assets/',
+                outputPath: 'assets/',
                 filename: '[name][ext]',
             },
         },
