@@ -511,7 +511,7 @@ export class CharacterSelectionUiManager {
      * @returns
      */
     private static buildConfigurationSummaryExpansionEntry(expansionName: string, toggleState: ExpansionToggleState): string {
-        return `<li class="text-left"><span class="font-weight-bold">${expansionName}:</span> <span>${getLangString(Constants.MOD_NAMESPACE + "_EXPANSION_TOGGLE_STATE_" + toggleState)}</span></li>`
+        return `<li class="text-left mt-2"><span class="font-weight-bold">${expansionName}:</span> <span>${getLangString(Constants.MOD_NAMESPACE + "_EXPANSION_TOGGLE_STATE_" + toggleState)}</span></li>`
     }
 
     /**
@@ -555,6 +555,6 @@ export class CharacterSelectionUiManager {
         const explanationClassAttribute = explanationColor != ''
             ? ` class="text-${explanationColor}"`
             : '';
-        return `<li class="text-left"><span class="font-weight-bold">${expansionName}:</span> <span${explanationClassAttribute}">${explanation}</span></li>`;
+        return `<li class="text-left mt-2"><span class="font-weight-bold">${expansionName}:</span> <span${explanationClassAttribute}">${explanation}</span></li>`;
     }
 }
